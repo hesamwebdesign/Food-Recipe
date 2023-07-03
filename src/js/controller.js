@@ -68,7 +68,7 @@ const controlServings = function (newServing) {
   model.updateServings(newServing);
 
   // Rendering Serving's Quantity:
-  recipeView.render(model.state.recipe);
+  recipeView.update(model.state.recipe);
 };
 // *--------------------------init--------------------------
 (function () {
