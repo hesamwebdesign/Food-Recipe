@@ -1,6 +1,6 @@
 import { async } from "regenerator-runtime";
-import { API_URL, RESULT_PER_PAGE } from "./config.js";
-import { getJSON } from "./helpers.js";
+import { API_URL, API_KEY, RESULT_PER_PAGE } from "./config.js";
+import { getJSON, sendJSON } from "./helpers.js";
 
 // *--------------------------state--------------------------
 export const state = {
@@ -14,21 +14,32 @@ export const state = {
   bookmarks: [],
 };
 
+// *--------------------------createRecipeObject--------------------------
+const createRecipeObject = function (data) {
+  const { recipe } = data.data;
+  return {
+    id: recipe.id,
+    title: recipe.title,
+    cookingTime: recipe.cooking_time,
+    publisher: recipe.publisher,
+    servings: recipe.servings,
+    sourceUrl: recipe.source_url,
+    image: recipe.image_url,
+    ingredients: recipe.ingredients,
+    ...(recipe.key && { key: recipe.key }),
+  };
+};
+
 // *--------------------------loadRecipe--------------------------
 export const loadRecipe = async function (id) {
   try {
+    // Get The Recipe:
     const data = await getJSON(`${API_URL}/${id}`);
     const { recipe } = data.data;
-    state.recipe = {
-      id: recipe.id,
-      title: recipe.title,
-      cookingTime: recipe.cooking_time,
-      publisher: recipe.publisher,
-      servings: recipe.servings,
-      sourceUrl: recipe.source_url,
-      imageUrl: recipe.image_url,
-      ingredients: recipe.ingredients,
-    };
+
+    // Change Recipe's Format:
+    state.recipe = createRecipeObject(data);
+    console.log(state.recipe);
 
     // Check if this Recipe has been Bookmarked:
     state.bookmarks.some((bookmark) => bookmark.id === id)
@@ -50,7 +61,7 @@ export const loadSearchResults = async function (query) {
         id: recipe.id,
         title: recipe.title,
         publisher: recipe.publisher,
-        imageUrl: recipe.image_url,
+        image: recipe.image_url,
       };
     });
     state.search.page = 1;
@@ -103,6 +114,46 @@ export const deleteBookmark = function (id) {
   // Mark current Recipe as Not Bookmark:
   if (id === state.recipe.id) state.recipe.bookmarked = false;
   persistBookmark();
+};
+
+// *--------------------------uploadRecipe--------------------------
+export const uploadRecipe = async function (newRecipe) {
+  try {
+    // Make Ingredients Part:
+    const ingredients = Object.entries(newRecipe)
+      .filter((entry) => entry[0].startsWith("ingredient") && entry[1] !== "")
+      .map((ing) => {
+        const ingArray = ing[1].replaceAll("", "").split(",");
+        if (ingArray.length !== 3)
+          throw new Error(
+            "Wrong ingredient format. Please use the correct format!"
+          );
+        const [quantity, unit, description] = ingArray;
+        return { quantity: quantity ? +quantity : null, unit, description };
+      });
+
+    // Make Whole New Recipe (True Format):
+    const recipe = {
+      title: newRecipe.title,
+      cooking_time: +newRecipe.cookingTime,
+      publisher: newRecipe.publisher,
+      servings: +newRecipe.servings,
+      source_url: newRecipe.sourceUrl,
+      image_url: newRecipe.image,
+      ingredients,
+    };
+
+    // Send Our Recipe:
+    const data = await sendJSON(`${API_URL}?key=${API_KEY}`, recipe);
+
+    // Change Recipe's Format
+    state.recipe = createRecipeObject(data);
+
+    // Add to Bookmarks:
+    addBookmark(state.recipe);
+  } catch (err) {
+    throw err;
+  }
 };
 
 // *--------------------------init--------------------------

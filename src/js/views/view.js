@@ -78,4 +78,20 @@ export default class View {
     this._clear();
     this._parentElement.insertAdjacentHTML("afterbegin", markup);
   }
+
+  // *--------------------------renderMessage--------------------------
+  renderMessage(message = this._message) {
+    const markup = `
+        <div class="error">
+          <div>
+            <svg>
+              <use href="${icons}#icon-enjoy"></use>
+            </svg>
+          </div>
+          <p>${message}</p>
+        </div>
+      `;
+    this._clear();
+    this._parentElement.insertAdjacentHTML("afterbegin", markup);
+  }
 }
