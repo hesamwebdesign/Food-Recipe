@@ -70,10 +70,23 @@ const controlServings = function (newServing) {
   // Rendering Serving's Quantity:
   recipeView.update(model.state.recipe);
 };
+
+// *--------------------------controlAddBookmarks--------------------------
+const controlAddBookmarks = function () {
+  // Bookmark the Recipe:
+  model.state.recipe.bookmarked
+    ? model.deleteBookmark(model.state.recipe.id)
+    : model.addBookmark(model.state.recipe);
+
+  // Rendering Bookmark's Sign:
+  recipeView.update(model.state.recipe);
+};
+
 // *--------------------------init--------------------------
 (function () {
   recipeView.addHandlerRender(controlRecipe);
   recipeView.addHandlerUpdateServings(controlServings);
+  recipeView.addHandlerAddBookmark(controlAddBookmarks);
   searchView.addHandlerSearch(controlSearchResults);
   paginationView.addHandlerClick(controlPagination);
 })();

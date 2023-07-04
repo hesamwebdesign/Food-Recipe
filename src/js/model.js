@@ -2,6 +2,7 @@ import { async } from "regenerator-runtime";
 import { API_URL, RESULT_PER_PAGE } from "./config.js";
 import { getJSON } from "./helpers.js";
 
+// *--------------------------state--------------------------
 export const state = {
   recipe: {},
   search: {
@@ -10,8 +11,10 @@ export const state = {
     page: 1,
     resultsPerPage: RESULT_PER_PAGE,
   },
+  bookmarks: [],
 };
 
+// *--------------------------loadRecipe--------------------------
 export const loadRecipe = async function (id) {
   try {
     const data = await getJSON(`${API_URL}/${id}`);
@@ -26,12 +29,18 @@ export const loadRecipe = async function (id) {
       imageUrl: recipe.image_url,
       ingredients: recipe.ingredients,
     };
+
+    // Check if this Recipe has been Bookmarked:
+    state.bookmarks.some((bookmark) => bookmark.id === id)
+      ? (state.recipe.bookmarked = true)
+      : (state.recipe.bookmarked = false);
   } catch (err) {
     console.error(`${err} ❌`);
     throw err;
   }
 };
 
+// *--------------------------loadSearchResults--------------------------
 export const loadSearchResults = async function (query) {
   try {
     state.search.query = query;
@@ -44,13 +53,14 @@ export const loadSearchResults = async function (query) {
         imageUrl: recipe.image_url,
       };
     });
-    console.log(state.search.results);
+    state.search.page = 1;
   } catch (err) {
     console.error(`${err} ❌`);
     throw err;
   }
 };
 
+// *--------------------------getSearchResultPage--------------------------
 export const getSearchResultPage = function (page = state.search.page) {
   state.search.page = page;
   const start = (page - 1) * state.search.resultsPerPage;
@@ -58,6 +68,7 @@ export const getSearchResultPage = function (page = state.search.page) {
   return state.search.results.slice(start, end);
 };
 
+// *--------------------------updateServings--------------------------
 export const updateServings = function (newServing = state.recipe.servings) {
   state.recipe.ingredients.forEach((ing) => {
     if (ing.quantity !== null) {
@@ -65,4 +76,23 @@ export const updateServings = function (newServing = state.recipe.servings) {
     }
   });
   state.recipe.servings = newServing;
+};
+
+// *--------------------------addBookmark--------------------------
+export const addBookmark = function (recipe) {
+  // Add Bookmark:
+  state.bookmarks.push(recipe);
+
+  // Mark current Recipe as Bookmark:
+  if (recipe.id === state.recipe.id) state.recipe.bookmarked = true;
+};
+
+// *--------------------------deleteBookmark--------------------------
+export const deleteBookmark = function (id) {
+  // Delete Bookmark:
+  const bookmarkIndex = state.bookmarks.findIndex((El) => El.id === id);
+  state.bookmarks.splice(bookmarkIndex, 1);
+
+  // Mark current Recipe as Not Bookmark:
+  if (id === state.recipe.id) state.recipe.bookmarked = false;
 };
